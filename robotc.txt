@@ -1,0 +1,153 @@
+//Initialize functions
+void siren();
+void lights();
+void stopsign();
+
+//Create side task to run at same time as task main
+task soundsiren()
+{
+	while(true)
+	{
+		//Call functions
+		lights();
+		siren();
+		stopsign();
+	}
+}
+
+task main()
+{
+	//Declare variables
+	int waitTime = 100;  //loop wiat time (ms)
+	float desiredDistance = 10; //desired desired
+	float distance; //measured distance
+	int rightBump,leftBump; //define bumpers
+	int speed; //define speed
+	int bumpcount=0; //set counter to track total bumps
+
+	//Drive forward
+	setMotorSpeed(motorB,20);
+	setMotorSpeed(motorC,20);
+	wait1Msec(500);
+
+	//Setup ultrasonic sensor
+	SensorType[S3]=sensorEV3_Ultrasonic;
+	distance=SensorValue[S3];
+
+	//Setup bump sensors
+	SensorType[S1]=sensorEV3_Touch;
+	SensorType[S4]=sensorEV3_Touch;
+	rightBump=SensorValue[S1];	//get right bump
+	leftBump=SensorValue[S4]; 	//get left bump
+
+	//Run sounds, siren, and stop sign
+	startTask (soundsiren);
+
+	//Keep going until 5 bumps sensed
+	while(bumpcount<5)
+	{
+	//Accelerate according to distance from criminal while no bump detected using ultrasonic sensor
+	while(rightBump==0 && leftBump==0)
+				{
+						if(distance<desiredDistance)	//while distance too short from criminal, reduce speed
+							{
+								setMotorSpeed(motorB,20);
+								setMotorSpeed(motorA,20);
+							}
+						else
+							{
+								speed=((80.0/245)*distance)+16.7;	//accelerate according to criminal distance
+
+								setMotorSpeed(motorB,speed);
+								setMotorSpeed(motorA,speed);
+							}
+							wait1Msec(waitTime);
+
+							//get sensor values
+							distance=SensorValue[S3];
+							rightBump=SensorValue[S1];
+							leftBump=SensorValue[S4];
+				}
+
+				//When bump detected, turn in direction of criminal
+				if (rightBump==1) //turn right
+				{
+					setMotorSpeed(motorB,-20);
+					setMotorSpeed(motorA,-20);
+					wait1Msec(2000);
+
+					setMotorSpeed(motorB,20);
+					setMotorSpeed(motorA,-20);
+					wait1Msec(500);
+
+					displayTextLine(1,"The criminal went that way!");
+					wait1Msec(800);
+
+				}
+
+				else if (leftBump==1) //turn left
+				{
+					setMotorSpeed(motorB,-20);
+					setMotorSpeed(motorA,-20);
+					wait1Msec(2000);
+
+					setMotorSpeed(motorB,-20);
+					setMotorSpeed(motorA,20);
+					wait1Msec(500);
+
+					displayTextLine(1,"The criminal went that way!");
+					wait1Msec(800);
+				}
+
+				else //if both bumpers hit, turn around completely
+				{
+					setMotorSpeed(motorB,-20);
+					setMotorSpeed(motorA,-20);
+					wait1Msec(2000);
+
+					setMotorSpeed(motorB,-20);
+					setMotorSpeed(motorA,20);
+					wait1Msec(1600);
+
+					displayTextLine(1,"The criminal went that way!");
+					wait1Msec(1600);
+
+				}
+
+					//Reset detected bumps to 0
+					rightBump=0;
+					leftBump=0;
+					bumpcount=bumpcount+1;
+	}
+	//Stop driving once 5 bumps detected
+	setMotorSpeed(motorA,0);
+	setMotorSpeed(motorB,0);
+	displayTextLine(1,"Got 'em!");
+	wait1Msec(2000);
+}
+
+void siren()  //Create police siren function
+{
+		playTone(969, 25);
+		while(bSoundActive)
+		{
+		}
+		playTone(800, 25);
+		while(bSoundActive)
+		{
+		}
+}
+
+void lights() //Create flashing light funciton
+{
+		setLEDColor(ledRedPulse);
+		wait1Msec(200);
+		setLEDColor(ledOff);
+		wait1Msec(200);
+}
+
+void stopsign()	//Stop sign function from pre-programmed file
+{
+	drawBmpfile(0, 127, "Stop 1");
+	sleep(2000);
+}
